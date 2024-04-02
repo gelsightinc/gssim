@@ -20,6 +20,17 @@ function tsettings = createscan(calibfile, target, outputnm, insettings)
     % Load target
     tsettings = loadTarget(target, pdata, insettings);
 
+    % If we have not specified an output folder
+    if nargin < 3
+        if nargout == 1 
+            % Return default settings
+            return;
+        else
+            error('An output folder must be specified to create a scan');
+        end
+    end
+
+
     % Calibrated resolution in millimeters-per-pixel
     mmpp = pdata.mmpp;
 
