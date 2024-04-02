@@ -1,4 +1,9 @@
-function saveIlluminationModel(pdata, fname)
+%SAVECALIBRATION Load a calibration from a yaml and png file
+%
+%   SAVECALIBRATION(CDATA, CNAME) saves a calibration struct CDATA into 
+%   yaml and png files with base name CNAME.
+%   
+function saveCalibration(pdata, fname)
     fov = 5.0;
     angbias = 0.03;
     savecamera = true;

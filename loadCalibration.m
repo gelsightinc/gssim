@@ -1,4 +1,9 @@
-function pdata = loadIlluminationModel(fpath)
+%LOADCALIBRATION Load a calibration from a yaml and png file
+%
+%   CDATA = LOADCALIBRATION(CALIBPATH) loads a calibration saved in yaml/png
+%   format into the struct CDATA.  
+%   
+function pdata = loadCalibration(fpath)
 
     if ~exist(fpath,'file')
         error('cannot locate scan file: %s',fpath);
