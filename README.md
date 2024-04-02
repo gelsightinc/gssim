@@ -9,7 +9,7 @@ This project contains MATLAB code for generating simulated GelSight scans that c
 
 This software is written in MATLAB and assumes the [gsmatlab](https://github.com/gelsightinc/gsmatlab) package is in your MATLAB path.
 
-You will also need to compile the shadeQuadratic.cpp file using mex. 
+You will also need to compile the shadeQuadratic.cpp file using mex:
 ```
 >> mex shadeQuadratic.cpp
 ```
