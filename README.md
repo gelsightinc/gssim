@@ -77,3 +77,15 @@ After the scan is generated, the entire scan folder can be copied into the GelSi
 
 ![Scan-003 example](resources/gelsight-mobile-scan-003.jpg)
 
+## Simulation functions
+
+Simulation functions can be called automatically from `createscan` by following the conventions below:
+- Name the function `simType' where Type is the type of surface to simulate. The function should be saved as a file named `simType.m`.
+- The first argument to the function is a struct with fields sz and mmpp. The sz field is a 1 x 2 array with the number of rows and the number of columns of the heightmap. The second argument is the resolution in millimeters-per-pixel. 
+- The second argument to the function is a struct that specifies the settings for this simulation function. The fields and types stored in the struct can be anything.
+- There is a single output argument to the function. The output argument is equal to the default settings struct if only one input argument is provided. It is equal to the heightmap if two input arguments are provided.
+
+See `simGroove.m` as an example of how to write a simulation function. 
+
+
+
