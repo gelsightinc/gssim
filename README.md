@@ -75,5 +75,5 @@ scan saved as Scan-003
 
 After the scan is generated, the entire scan folder can be copied into the GelSight Mobile scan library and loaded from Explore view. 
 
-[Scan-003 example](resources/gelsight-mobile-scan-003.jpg)
+![Scan-003 example](resources/gelsight-mobile-scan-003.jpg)
 
