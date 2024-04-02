@@ -73,6 +73,7 @@ function tsettings = createscan(calibfile, target, outputnm, insettings)
 	% Save calibration to scan folder
 	saveCalibration(pdata, fullfile(outfolder,calibyaml));
 
+    fprintf('scan saved as %s\n',outfolder);
 
 end
 

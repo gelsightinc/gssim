@@ -34,7 +34,7 @@ device:
     devicetype: 0.5X, 5 MP
     version: 2
 flatfield: 
-    modelfile: Calib-1587-M6G0_20240112_0942.png
+    modelfile: series1_1587_M6G0.png
     modelsize: (616, 514)
     nL: 6
     scale: [0.405688041232, 0.396090992146, 0.393797815576, 0.395257629173, 0.388823223788, 0.389574361245]
