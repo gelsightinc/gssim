@@ -24,9 +24,10 @@ function pdata = loadCalibration(fpath)
     line = fgetl(fd);
     while ischar(line)
         % Find key
-        colonix = strfind(line,':');
+        colons = strfind(line,':');
         lastline = [];
-        if ~isempty(colonix)
+        if ~isempty(colons)
+            colonix = colons(1);
             key = line(1:colonix-1);
             key = strtrim(key);
             
@@ -91,9 +92,9 @@ function [M,lastline] = loadmatrix(fd)
         dashes = (line == '-');
         numbers = isstrprop(line,'digit');
         dashix = find(dashes(1:end-1) & ~numbers(2:end));
-        colonix = strfind(line,':');
+        colons = strfind(line,':');
         
-        if isempty(colonix)
+        if isempty(colons)
             line = fgetl(fd);
             continue;
         end
@@ -107,6 +108,7 @@ function [M,lastline] = loadmatrix(fd)
         end
         
         
+        colonix = colons(1);
         if ~isempty(dashix)
             ix = ix + 1;
             key = strtrim(line(dashix+1 : colonix-1));
@@ -156,12 +158,14 @@ function [F,lastline] = loadflatfield(fd, cfolder)
             break;
         end
         
-        colonix = strfind(line,':');
+        colons = strfind(line,':');
         
-        if isempty(colonix)
+        if isempty(colons)
             line = fgetl(fd);
             continue;
         end
+
+        colonix = colons(1);
         
         key = strtrim(line(1:colonix-1));
         value = strtrim(line(colonix+1:end));

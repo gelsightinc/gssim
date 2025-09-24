@@ -8,14 +8,23 @@
 %   SETTINGS = CREATESCAN(CALIBFILE, TARGET) returns the default SETTINGS for the
 %   specified TARGET and device DEVTYPE. 
 %
-function tsettings = createscan(calibfile, target, outputnm, insettings)
+function tsettings = createscan(calibfile, target, outputnm, varargin)
 
     % Load device calibration
     pdata = loadDevice(calibfile);
 
-    if ~exist('insettings','var')
-        insettings = defaultSettingsForTarget(target, pdata);
+    % Input struct
+    if numel(varargin) == 1 && isstruct(varargin{1})
+        insettings = varargin{1};
+    elseif iscell(varargin)
+        insettings = defaultSettingsForTarget(target,pdata);
+        insettings = parseSettings(varargin, insettings);
     end
+
+    
+    % if ~exist('insettings','var')
+    %     insettings = defaultSettingsForTarget(target, pdata);
+    % end
 
     % Load target
     tsettings = loadTarget(target, pdata, insettings);
@@ -137,7 +146,7 @@ end
 function tsettings = defaultSettingsForTarget(target,pdata)
 
     % Check for simulation function 
-    simfunction = ['sim' upper(target(1)) lower(target(2:end))];
+    simfunction = ['sim' upper(target(1)) target(2:end)];
 
     if exist(simfunction) ~= 2
         error('cannot find simulation function named %s.m',simfunction);
@@ -177,7 +186,7 @@ end
 %
 function hm = getHeightmap(target, pdata, tsettings)
 
-    simfunction = ['sim' upper(target(1)) lower(target(2:end))];
+    simfunction = ['sim' upper(target(1)) target(2:end)];
 
     if exist(simfunction) ~= 2
         error('cannot find simulation function named %s.m',simfunction);
@@ -185,6 +194,30 @@ function hm = getHeightmap(target, pdata, tsettings)
 
     
     hm = eval(sprintf('%s(pdata, tsettings);',simfunction));
+
+end
+
+%
+% Extract settings from argument list
+% 
+%
+function outsettings = parseSettings(varargin, insettings)
+    if mod(numel(varargin),2) ~= 0
+        error('argument list must be specified in name-value pairs');
+    end
+    nargs = numel(varargin)/2;
+
+    outsettings = insettings;
+
+    for i = 1 : nargs
+        k = 2*i - 1;
+        keynm = varargin{k};
+        val = varargin{k+1};
+        if ~isfield(outsettings,keynm)
+            warning('settings struct does not have field named %s',keynm);
+        end
+        outsettings.(keynm) = val;
+    end
 
 end
 
