@@ -8,7 +8,11 @@
 %   SETTINGS = CREATESCAN(CALIBFILE, TARGET) returns the default SETTINGS for the
 %   specified TARGET and device DEVTYPE. 
 %
-function tsettings = createscan(calibfile, target, outputnm, varargin)
+%   [SETTINGS,OUTDR] = CREATESCAN(...) returns the SETTINGS for the and the name
+%   of the output folder
+%   
+%
+function [tsettings,outfolder] = createscan(calibfile, target, outputnm, varargin)
 
     % Load device calibration
     pdata = loadDevice(calibfile);
@@ -88,7 +92,7 @@ function tsettings = createscan(calibfile, target, outputnm, varargin)
     end
 
 	% Create scan file
-	savescan(outfolder, mmpp, calibyaml, hname, nrmname);
+	savescan(outfolder,size(hm), mmpp, calibyaml, hname, nrmname);
 
 	% Save calibration to scan folder
 	saveCalibration(pdata, fullfile(outfolder,calibyaml));
@@ -97,33 +101,6 @@ function tsettings = createscan(calibfile, target, outputnm, varargin)
 
 end
 
-%
-% Load device from calibration file
-%
-function [pdata,cpath] = loadDevice(calibfile)
-
-    % Check for calibration file
-    [pdir,filenm,fext] = fileparts(calibfile);
-    if isempty(fext)
-        % Add yaml extension if necessary
-        calibfile = [calibfile '.yaml'];
-    end
-
-    % Look in devices folder if only file name is specified
-    if isempty(pdir)
-        cpath = fullfile('devices',calibfile);
-    else
-        cpath = calibfile;
-    end
-
-    if ~exist(cpath, 'file')
-        error('cannot find calibration file %s in the devices folder',calibfile)
-    end
-
-    % Load the illumination model
-    pdata = loadCalibration(cpath);
-
-end
 
 %
 % Check target
@@ -162,12 +139,14 @@ end
 %
 % Save the scan file
 %
-function savescan(scanfolder, mmpp, cname, hname, nrmname)
+function savescan(scanfolder, sz, mmpp, cname, hname, nrmname)
 
 	% Save scan file
     fd = fopen(fullfile(scanfolder, 'scan.yaml'), 'w');
 
 
+    fprintf(fd, 'scanwidth: %d\n',sz(2));
+    fprintf(fd, 'scanheight: %d\n',sz(1));
     fprintf(fd, 'images:\n');
     for i = 1 : 6
         fprintf(fd, '  - image%02d.png\n',i);
