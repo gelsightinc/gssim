@@ -101,6 +101,45 @@ Here is an example of how to run `simGroove`
 >> createscan('gsmax_26D1_P5LX','groove','groove-1mm','depthmm',1.0);
 ```
 
+The full `groove` settings struct is:
+
+| Field | Default | Meaning |
+|-------|---------|---------|
+| `depthmm` | `0.5` | Depth of the groove (mm) |
+| `orientation` | `'horizontal'` | `'horizontal'` or `'vertical'` |
+| `widthmm` | `0.5` | Bottom width of the groove (mm) |
+| `angle` | `30` | Side-wall angle relative to horizontal (degrees) |
+| `geommmpp` | `0` | Geometry build resolution (mm/px); `0` = use the calibrated resolution |
+| `aasigma` | `0.5` | Anti-aliasing Gaussian sigma, in calibrated pixels |
+
+#### Geometry resolution (`geommmpp`)
+
+By default the groove is built directly on the calibrated pixel grid, so its
+feature widths are quantized to whole pixels. For example, on a calibration with
+`mmpp = 0.007052` mm/px a nominally 0.5 mm groove bottom rounds to 71 px, which
+measures `(71-1) * 0.007052 = 0.4936` mm — about 6 µm narrow. This is expected
+quantization, not a bug, but it limits how accurately a synthetic target
+reproduces a nominal dimension.
+
+Setting `geommmpp` to a value finer than the calibrated `mmpp` builds the
+geometry on a fine grid, applies an anti-aliasing Gaussian blur (controlled by
+`aasigma`), and then interpolates the result back onto the calibrated grid. The
+sub-pixel feature edges this produces measure much closer to the nominal value:
+
+```
+% Build the groove geometry at 1 µm/px before resampling to the calibration
+>> st = createscan('series2_2EF6_4JNW', 'groove');
+>> st.geommmpp = 0.001;
+>> createscan('series2_2EF6_4JNW', 'groove', 'Scan', st);
+```
+
+With `geommmpp = 0.001` the same 0.5 mm groove measures ≈ 0.4989 mm (error
+~1 µm instead of ~6 µm). The fine-grid path is only used when it oversamples the
+calibration by at least 1.5x (`mmpp / geommmpp >= 1.5`); for coarser values the
+oversampling is too small for the anti-aliasing to help and `simGroove` falls
+back to the original method. Finer `geommmpp` gives smaller error at the cost of
+more computation; values around `mmpp/4` to `mmpp/7` are a good balance.
+
 ### simScanFromHeightmap
 The `simScanFromHeightmap` function creates a scan folder with images and normal map from an existing heightmap. The parameters are
 - `scandr` The path to the scan folder
@@ -111,6 +150,29 @@ The `simScanFromHeightmap` function creates a scan folder with images and normal
 >> createscan('gsmax_26D1_P5LX', 'scanFromHeightmap', 'testscan', 'scandr', 'path_to_scan', 'filenm', 'heightmap.tmd');
 ```
 
+## Tests
 
+Unit tests live in the `tests/` folder and use MATLAB's `matlab.unittest`
+framework. `tests/testGrooveWidth.m` verifies the edge-to-edge width of a
+generated groove scan using sub-pixel edge detection (`grooveEdgeToEdge.m`): it
+confirms that a groove built at the calibrated resolution is measurably off the
+nominal 0.5 mm, and that enabling `geommmpp` brings the measured width much
+closer to nominal.
+
+Run the groove tests from the project root with the convenience runner:
+```
+>> runGrooveTests
+```
+
+or call `runtests` directly (note the `.m` extension is required when passing a
+path, otherwise MATLAB cannot resolve the file into a test suite):
+```
+>> runtests('tests/testGrooveWidth.m')   % a single test file
+>> runtests('tests')                     % every test in the folder
+```
+
+The tests create temporary scan folders in the project root and remove them when
+finished. `grooveEdgeToEdge(scanpath, tset)` can also be called on its own to
+measure the groove width in any existing scan folder.
 
 
