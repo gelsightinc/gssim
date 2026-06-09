@@ -109,36 +109,30 @@ The full `groove` settings struct is:
 | `orientation` | `'horizontal'` | `'horizontal'` or `'vertical'` |
 | `widthmm` | `0.5` | Bottom width of the groove (mm) |
 | `angle` | `30` | Side-wall angle relative to horizontal (degrees) |
-| `geommmpp` | `0` | Geometry build resolution (mm/px); `0` = use the calibrated resolution |
+| `geommpp` | `0` | Geometry build resolution (mm/px); `0` = use the calibrated resolution |
 | `aasigma` | `0.5` | Anti-aliasing Gaussian sigma, in calibrated pixels |
 
-#### Geometry resolution (`geommmpp`)
+#### Geometry resolution (`geommpp`)
 
 By default the groove is built directly on the calibrated pixel grid, so its
-feature widths are quantized to whole pixels. For example, on a calibration with
-`mmpp = 0.007052` mm/px a nominally 0.5 mm groove bottom rounds to 71 px, which
-measures `(71-1) * 0.007052 = 0.4936` mm — about 6 µm narrow. This is expected
-quantization, not a bug, but it limits how accurately a synthetic target
-reproduces a nominal dimension.
-
-Setting `geommmpp` to a value finer than the calibrated `mmpp` builds the
-geometry on a fine grid, applies an anti-aliasing Gaussian blur (controlled by
-`aasigma`), and then interpolates the result back onto the calibrated grid. The
-sub-pixel feature edges this produces measure much closer to the nominal value:
+feature widths are limited by pixel quantization. Setting `geommpp` to a value
+finer than the calibrated `mmpp` builds the geometry on a higher-resolution grid,
+applies an anti-aliasing Gaussian blur (controlled by `aasigma`), and resamples
+back onto the calibrated grid. This gives the features sub-pixel precision, so the
+measured dimensions land closer to the nominal value:
 
 ```
 % Build the groove geometry at 1 µm/px before resampling to the calibration
 >> st = createscan('series2_2EF6_4JNW', 'groove');
->> st.geommmpp = 0.001;
+>> st.geommpp = 0.001;
 >> createscan('series2_2EF6_4JNW', 'groove', 'Scan', st);
 ```
 
-With `geommmpp = 0.001` the same 0.5 mm groove measures ≈ 0.4989 mm (error
-~1 µm instead of ~6 µm). The fine-grid path is only used when it oversamples the
-calibration by at least 1.5x (`mmpp / geommmpp >= 1.5`); for coarser values the
-oversampling is too small for the anti-aliasing to help and `simGroove` falls
-back to the original method. Finer `geommmpp` gives smaller error at the cost of
-more computation; values around `mmpp/4` to `mmpp/7` are a good balance.
+The fine-grid path is only used when it oversamples the calibration by at least
+1.5x (`mmpp / geommpp >= 1.5`); for coarser values the oversampling is too small
+for the anti-aliasing to help and `simGroove` falls back to the original method.
+Finer `geommpp` gives smaller error at the cost of more computation; values around
+`mmpp/4` to `mmpp/7` are a good balance.
 
 ### simScanFromHeightmap
 The `simScanFromHeightmap` function creates a scan folder with images and normal map from an existing heightmap. The parameters are
@@ -156,7 +150,7 @@ Unit tests live in the `tests/` folder and use MATLAB's `matlab.unittest`
 framework. `tests/testGrooveWidth.m` verifies the edge-to-edge width of a
 generated groove scan using sub-pixel edge detection (`grooveEdgeToEdge.m`): it
 confirms that a groove built at the calibrated resolution is measurably off the
-nominal 0.5 mm, and that enabling `geommmpp` brings the measured width much
+nominal 0.5 mm, and that enabling `geommpp` brings the measured width much
 closer to nominal.
 
 Run the groove tests from the project root with the convenience runner:

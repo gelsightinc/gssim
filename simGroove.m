@@ -10,22 +10,22 @@
 %      orientation  'horizontal' or 'vertical'
 %      widthmm      Bottom width of the groove in mm
 %      angle        Angle of the side walls relative to horizontal (degrees)
-%      geommmpp     Geometry resolution in mm-per-pixel used to build the
+%      geommpp     Geometry resolution in mm-per-pixel used to build the
 %                   groove before it is resampled at the calibrated mmpp.
 %                   When 0 (the default) the groove is built directly at the
 %                   calibrated resolution (legacy behavior). The fine-grid
-%                   path is only used when geommmpp oversamples the calibrated
-%                   mmpp by at least MINRATIO (1.5x, i.e. mmpp/geommmpp >= 1.5);
-%                   when geommmpp is only marginally finer, the oversampling is
+%                   path is only used when geommpp oversamples the calibrated
+%                   mmpp by at least MINRATIO (1.5x, i.e. mmpp/geommpp >= 1.5);
+%                   when geommpp is only marginally finer, the oversampling is
 %                   too small to help and the original method is used instead.
-%                   When engaged (e.g. geommmpp = 0.001) the profile is
+%                   When engaged (e.g. geommpp = 0.001) the profile is
 %                   constructed on the fine grid, anti-alias filtered with a
 %                   Gaussian, then interpolated onto the calibrated grid,
 %                   which greatly reduces the quantization error in the
 %                   feature widths.
 %      aasigma      Standard deviation of the anti-aliasing Gaussian, in
 %                   units of calibrated pixels (default 0.5). Only used when
-%                   geommmpp is enabled.
+%                   geommpp is enabled.
 %
 function outval = simGroove(device, insettings)
 
@@ -33,7 +33,7 @@ function outval = simGroove(device, insettings)
     defaults.orientation = 'horizontal';       % Orientation of groove
     defaults.widthmm     = 0.5;                % Bottom width of groove
     defaults.angle       = 30;                 % Angle of side walls relative to horizontal
-    defaults.geommmpp    = 0;                  % Geometry build resolution (0 = use calibrated mmpp)
+    defaults.geommpp    = 0;                  % Geometry build resolution (0 = use calibrated mmpp)
     defaults.aasigma     = 0.5;                % Anti-aliasing Gaussian sigma, in calibrated pixels
 
     % Return default settings if none are specified
@@ -72,24 +72,24 @@ end
 %
 % Make a groove profile.
 %
-% When settings.geommmpp is enabled and finer than the calibrated mmpp, the
+% When settings.geommpp is enabled and finer than the calibrated mmpp, the
 % groove is built on a fine grid, anti-alias filtered, and resampled onto the
 % calibrated grid. Otherwise the groove is built directly at mmpp (legacy).
 %
 function z = makeGrooveProfile(dim, mmpp, settings)
 
-    geommmpp = 0;
-    if isfield(settings,'geommmpp')
-        geommmpp = settings.geommmpp;
+    geommpp = 0;
+    if isfield(settings,'geommpp')
+        geommpp = settings.geommpp;
     end
 
-    % Only use the fine-grid path when geommmpp oversamples the calibrated
+    % Only use the fine-grid path when geommpp oversamples the calibrated
     % resolution by at least this ratio. When the ratio is too close to 1 the
     % anti-aliasing has too little to work with and the fine grid can actually
     % be less accurate than the calibrated grid, so we fall back to the
     % original method.
     MINRATIO = 1.5;
-    if geommmpp <= 0 || (mmpp / geommmpp) < MINRATIO
+    if geommpp <= 0 || (mmpp / geommpp) < MINRATIO
         z = rawGrooveProfile(dim, mmpp, settings);
         return;
     end
@@ -97,10 +97,10 @@ function z = makeGrooveProfile(dim, mmpp, settings)
     % --- High-resolution geometry path ---
 
     % Number of fine-grid samples spanning the same physical extent
-    dim_hi = round(dim * mmpp / geommmpp);
+    dim_hi = round(dim * mmpp / geommpp);
 
     % Build the groove at the fine geometry resolution
-    prof_hi = rawGrooveProfile(dim_hi, geommmpp, settings);
+    prof_hi = rawGrooveProfile(dim_hi, geommpp, settings);
 
     % Anti-aliasing Gaussian (sigma in fine-grid pixels) applied before
     % resampling down to the calibrated grid.
@@ -108,7 +108,7 @@ function z = makeGrooveProfile(dim, mmpp, settings)
     if isfield(settings,'aasigma')
         aasigma = settings.aasigma;
     end
-    sigma_hi = aasigma * (mmpp / geommmpp);
+    sigma_hi = aasigma * (mmpp / geommpp);
 
     rad = ceil(4 * sigma_hi);
     xk  = -rad:rad;
@@ -124,7 +124,7 @@ function z = makeGrooveProfile(dim, mmpp, settings)
     % center coincides on both grids.
     cthi  = floor((dim_hi + 1)/2);
     ctcal = floor((dim + 1)/2);
-    x_hi  = ((1:dim_hi) - cthi)  * geommmpp;
+    x_hi  = ((1:dim_hi) - cthi)  * geommpp;
     x_cal = ((1:dim)    - ctcal) * mmpp;
 
     z = interp1(x_hi, prof_hib, x_cal, 'linear', 0);
@@ -140,8 +140,12 @@ function z = rawGrooveProfile(dim, mmpp, settings)
     % Center of groove
     ct = floor((dim+1)/2);
 
-    % Groove bottom in pixels, subtract 2 because side walls start at the depth value
-    wdpx = round(settings.widthmm / mmpp) - 2;
+    % Groove bottom in pixels. The flat bottom is a plateau whose two ends are
+    % the side-wall start points (both at -gdepth), so it holds wdpx+2 samples
+    % and spans (wdpx+1) intervals. For an edge-to-edge bottom width of widthmm
+    % we need wdpx+1 = widthmm/mmpp, hence the -1 (subtracting 2 made the bottom
+    % one pixel too narrow).
+    wdpx = round(settings.widthmm / mmpp) - 1;
 
     % Depth in pixels
     gdepth = settings.depthmm / mmpp;

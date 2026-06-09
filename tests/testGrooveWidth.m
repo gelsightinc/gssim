@@ -8,7 +8,7 @@
 %         wide as intended -- it is quantized by the mm-per-pixel resolution.
 %
 %     (2) Building the geometry at a finer resolution with anti-aliasing
-%         (settings.geommmpp) brings the measured width much closer to the
+%         (settings.geommpp) brings the measured width much closer to the
 %         nominal 0.500 mm.
 %
 %   This test file lives in the tests/ subdirectory; it adds the parent
@@ -54,14 +54,14 @@ classdef testGrooveWidth < matlab.unittest.TestCase
 
             % (1) Legacy scan: geometry built directly at calibrated mmpp
             baseTset = tc.Tset;
-            baseTset.geommmpp = 0;
+            baseTset.geommpp = 0;
             [~, base] = createscan(tc.Calib, 'groove', 'TestGrooveBaseline', baseTset);
             tc.BaselinePath = fullfile(rootdir, base);
             tc.CreatedDirs{end+1} = tc.BaselinePath;
 
             % (2) Improved scan: high-resolution geometry + anti-aliasing
             hiTset = tc.Tset;
-            hiTset.geommmpp = tc.GeomMmpp;
+            hiTset.geommpp = tc.GeomMmpp;
             [~, hi] = createscan(tc.Calib, 'groove', 'TestGrooveHiRes', hiTset);
             tc.ImprovedPath = fullfile(rootdir, hi);
             tc.CreatedDirs{end+1} = tc.ImprovedPath;
@@ -82,8 +82,10 @@ classdef testGrooveWidth < matlab.unittest.TestCase
     methods (Test)
 
         function detectsQuantizedWidth(tc)
-            % The legacy groove is quantized by the mm-per-pixel resolution and
-            % is therefore NOT exactly 0.500 mm wide.
+            % The legacy (native-grid) groove is limited by pixel quantization
+            % and is therefore NOT exactly 0.500 mm wide. After the fencepost
+            % fix the residual is the +-1/2-pixel rounding (~0.7 um here), not a
+            % whole-pixel bias.
             [w, info] = grooveEdgeToEdge(tc.BaselinePath, tc.Tset);
 
             fprintf('\n[baseline] bottom width = %.4f mm (nominal %.3f, mmpp %.5f)\n', ...
@@ -93,15 +95,15 @@ classdef testGrooveWidth < matlab.unittest.TestCase
             tc.verifyNumElements(info.bottomedgespx, 2, ...
                 'expected exactly two lower groove corners');
 
-            % Confirm the scan is measurably NOT 0.500 mm wide. The expected
-            % quantization error is on the order of one pixel (~0.007 mm).
+            % Confirm the scan is measurably NOT 0.500 mm wide: the residual
+            % rounding error should exceed 0.5 um.
             err = abs(w - tc.NominalWmm);
-            tc.verifyGreaterThan(err, 0.002, ...
-                'baseline groove should be measurably off 0.500 mm due to quantization');
+            tc.verifyGreaterThan(err, 0.0005, ...
+                'baseline groove should be off 0.500 mm by more than 0.5 um (pixel rounding)');
 
-            % And the deviation should not exceed roughly one pixel
-            tc.verifyLessThan(err, tc.Mmpp, ...
-                'quantization error should be within ~1 pixel');
+            % And the deviation should not exceed the +-1/2-pixel limit.
+            tc.verifyLessThan(err, tc.Mmpp/2, ...
+                'native-grid error should be within half a pixel');
         end
 
         function highResImprovesWidth(tc)
